@@ -10,6 +10,24 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
+
 import { Badge } from "@/components/ui/badge";
 
 import {
@@ -28,6 +46,7 @@ import {
   getMedal,
   MULTIPLIER,
   multiplierToNumber,
+  POINTS,
 } from "@/assets/DartGameRessources";
 import { DartGame } from "@/DartGame/DartGame";
 import { Input } from "@/components/ui/input";
@@ -229,9 +248,56 @@ class Game extends Component<GameProps, GameState> {
           </h6>
 
           <div className="mt-6">
-            <Button className="mb-4 mr-5" onClick={this.handleSubmit}>
+            <Button className="mb-4 mr-3" onClick={this.handleSubmit}>
               Confirmer les points
             </Button>
+            <Drawer direction="top">
+              <DrawerTrigger asChild>
+                <Button className="mr-3" variant="outline">
+                  Les points
+                </Button>
+              </DrawerTrigger>
+              <DrawerContent>
+                <div>
+                  <div className="mx-auto w-full max-w-xl">
+                    <DrawerHeader>
+                      <DrawerTitle>
+                        Les points de la partie de fléchette
+                      </DrawerTitle>
+                      <DrawerDescription>
+                        Voici les différents points que vous pouvez obtenir lors
+                        d'une partie de fléchette.
+                      </DrawerDescription>
+                    </DrawerHeader>
+                  </div>
+                  <div className="flex justify-center">
+                    {POINTS.map((point) => (
+                      <Card key={point.label} className="mb-4 mx-4">
+                        <CardHeader>
+                          <CardTitle>{point.label}</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <img
+                            src={point.illustration}
+                            alt={point.label}
+                            className="w-full h-52 object-contain"
+                          />
+                          <p className="text-center">{point.description}</p>
+                        </CardContent>
+                        <CardFooter></CardFooter>
+                      </Card>
+                    ))}
+                  </div>
+                  <div className="mx-auto w-full max-w-sm">
+                    <DrawerFooter>
+                      <DrawerClose asChild>
+                        <Button variant="outline">Fermer</Button>
+                      </DrawerClose>
+                    </DrawerFooter>
+                  </div>
+                </div>
+              </DrawerContent>
+            </Drawer>
             <Button variant="secondary" onClick={() => this.stop()}>
               Arrêter la partie
             </Button>
