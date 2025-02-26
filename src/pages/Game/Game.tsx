@@ -132,8 +132,8 @@ class Game extends Component<GameProps, GameState> {
 
   render() {
     return (
-      <div className="flex">
-        <div className="w-2/3 p-4">
+      <>
+        <div className="p-4">
           <Breadcrumb>
             <BreadcrumbList>
               {this.game.getPlayersFromCurrent().map((player) => (
@@ -151,183 +151,191 @@ class Game extends Component<GameProps, GameState> {
               <BreadcrumbItem key="etc">...</BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
-
-          <div>
-            <h1 className="text-4xl font-bold tracking-tighter mt-6">
-              Au tour de {this.game.getCurrentPlayer().getName()}
-            </h1>
-
-            <h4 className="text-2xl font-bold tracking-tighter mt-4">
-              {this.game.getCurrentPlayer().points} points,{" "}
-              {501 - this.game.getCurrentPlayer().points} restants
-            </h4>
-
-            <h6 className="text-l font-bold tracking-tighter mt-4">
-              {this.totalNewPoints} points à ajouter
-            </h6>
-          </div>
-
-          <div className="w-2/3 mt-6">
-            {[0, 1, 2].map((index) => (
-              <div key={index} className="mb-4">
-                <h2 className="text-l font-bold tracking-tighter">
-                  Fléchette {index + 1} -
-                </h2>
-                <Input
-                  placeholder="Entrer le score"
-                  value={
-                    this.state.scores[index] != 0
-                      ? this.state.scores[index]
-                      : ""
-                  }
-                  type="number"
-                  max={50}
-                  min={0}
-                  onChange={(e) =>
-                    this.handleInputChange(index, e.target.value)
-                  }
-                />
-
-                <Label className="mt-4">Multiplicateur</Label>
-                <Select
-                  value={this.state.multipliers[index] as string}
-                  onValueChange={(value) =>
-                    this.handleSelectChange(index, value)
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner la zone" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectLabel>Multiplicateur</SelectLabel>
-                      {MULTIPLIER.map((multiplier) => (
-                        <SelectItem
-                          key={multiplier.value}
-                          value={multiplier.value}
-                        >
-                          <Badge>{multiplier.badge}</Badge>
-                          <Badge variant="secondary">
-                            {multiplier.secondary}
-                          </Badge>
-                          {multiplier.label}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-
-                <Separator className="my-3" />
-              </div>
-            ))}
-          </div>
         </div>
+        <div className="flex">
+          <div className="w-2/3 p-4 ml-6">
+            <div>
+              <h1 className="text-4xl font-bold tracking-tighter mt-6">
+                Au tour de {this.game.getCurrentPlayer().getName()}
+              </h1>
 
-        <div className="w-1/3 p-4 mt-6">
-          {this.state.validated && (
-            <Alert variant="default" className="mb-6">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Prochain round</AlertTitle>
-              <AlertDescription>
-                Les points ont été ajoutés avec succès.
-              </AlertDescription>
-            </Alert>
-          )}
-          <h3 className="text-3xl font-bold tracking-tighter">
-            Partie de fléchette
-          </h3>
+              <h4 className="text-2xl font-bold tracking-tighter mt-4">
+                {this.game.getCurrentPlayer().points} points,{" "}
+                {501 - this.game.getCurrentPlayer().points} restants
+              </h4>
 
-          <h5 className="text-l font-bold tracking-tighter">
-            Commencé à {this.game.getStartTime()}
-          </h5>
+              <h6 className="text-l font-bold tracking-tighter mt-4">
+                {this.totalNewPoints} points à ajouter
+              </h6>
+            </div>
 
-          <h6 className="text-2xl font-bold tracking-tighter mt-4">
-            Tour {this.game.getCurrentRound() + 1} -{" "}
-            {this.game.getCurrentPlayerIndex() + 1} /{" "}
-            {this.game.getPlayers().length}
-          </h6>
+            <div className="w-2/3 mt-6">
+              {[0, 1, 2].map((index) => (
+                <div key={index} className="mb-4">
+                  <h2 className="text-l font-bold tracking-tighter">
+                    Fléchette {index + 1} -
+                  </h2>
+                  <Input
+                    placeholder="Entrer le score"
+                    value={
+                      this.state.scores[index] != 0
+                        ? this.state.scores[index]
+                        : ""
+                    }
+                    type="number"
+                    max={50}
+                    min={0}
+                    onChange={(e) =>
+                      this.handleInputChange(index, e.target.value)
+                    }
+                  />
 
-          <div className="mt-6">
-            <Button className="mb-4 mr-3" onClick={this.handleSubmit}>
-              Confirmer les points
-            </Button>
-            <Drawer direction="top">
-              <DrawerTrigger asChild>
-                <Button className="mr-3" variant="outline">
-                  Les points
-                </Button>
-              </DrawerTrigger>
-              <DrawerContent>
-                <div>
-                  <div className="mx-auto w-full max-w-xl">
-                    <DrawerHeader>
-                      <DrawerTitle>
-                        Les points de la partie de fléchette
-                      </DrawerTitle>
-                      <DrawerDescription>
-                        Voici les différents points que vous pouvez obtenir lors
-                        d'une partie de fléchette.
-                      </DrawerDescription>
-                    </DrawerHeader>
-                  </div>
-                  <div className="flex justify-center">
-                    {POINTS.map((point) => (
-                      <Card key={point.label} className="mb-4 mx-4">
-                        <CardHeader>
-                          <CardTitle>{point.label}</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <img
-                            src={point.illustration}
-                            alt={point.label}
-                            className="w-full h-52 object-contain"
-                          />
-                          <p className="text-center">{point.description}</p>
-                        </CardContent>
-                        <CardFooter></CardFooter>
-                      </Card>
-                    ))}
-                  </div>
-                  <div className="mx-auto w-full max-w-sm">
-                    <DrawerFooter>
-                      <DrawerClose asChild>
-                        <Button variant="outline">Fermer</Button>
-                      </DrawerClose>
-                    </DrawerFooter>
-                  </div>
+                  <Label className="mt-4">Multiplicateur</Label>
+                  <Select
+                    value={this.state.multipliers[index] as string}
+                    onValueChange={(value) =>
+                      this.handleSelectChange(index, value)
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner la zone" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectLabel>Multiplicateur</SelectLabel>
+                        {MULTIPLIER.map((multiplier) => (
+                          <SelectItem
+                            key={multiplier.value}
+                            value={multiplier.value}
+                          >
+                            <Badge>{multiplier.badge}</Badge>
+                            <Badge variant="secondary">
+                              {multiplier.secondary}
+                            </Badge>
+                            {multiplier.label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+
+                  <Separator className="my-3" />
                 </div>
-              </DrawerContent>
-            </Drawer>
-            <Button variant="secondary" onClick={() => this.stop()}>
-              Arrêter la partie
-            </Button>
+              ))}
+            </div>
           </div>
 
-          <div className="mt-6 mr-3">
-            <h3 className="text-2xl font-bold tracking-tighter mb-4">
-              Classement
+          <div className="w-2/3 p-4 mt-6">
+            {this.state.validated && (
+              <Alert variant="default" className="mb-6">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Prochain round</AlertTitle>
+                <AlertDescription>
+                  Les points ont été ajoutés avec succès.
+                </AlertDescription>
+              </Alert>
+            )}
+            <h3 className="text-3xl font-bold tracking-tighter">
+              Partie de fléchette
             </h3>
-            <table className="min-w-full bg-white">
-              <thead>
-                <tr>
-                  <th className="py-2">Place</th>
-                  <th className="py-2">Joueur</th>
-                  <th className="py-2">Points</th>
-                </tr>
-              </thead>
-              <tbody>
-                {this.game.getPlayersByScore().map((player, index) => (
-                  <tr key={player.getId()}>
-                    <td className="border px-4 py-2">{getMedal(index)}</td>
-                    <td className="border px-4 py-2">{player.getName()}</td>
-                    <td className="border px-4 py-2">{player.points}</td>
+
+            <h5 className="text-l font-bold tracking-tighter">
+              Commencé à {this.game.getStartTime()}
+            </h5>
+
+            <h6 className="text-2xl font-bold tracking-tighter mt-4">
+              Tour {this.game.getCurrentRound() + 1} -{" "}
+              {this.game.getCurrentPlayerIndex() + 1} /{" "}
+              {this.game.getPlayers().length}
+            </h6>
+
+            <div className="mt-6">
+              <Button className="mb-4 mr-3" onClick={this.handleSubmit}>
+                Confirmer les points
+              </Button>
+              <Drawer direction="top">
+                <DrawerTrigger asChild>
+                  <Button className="mr-3" variant="outline">
+                    Comment compter les points
+                  </Button>
+                </DrawerTrigger>
+                <DrawerContent>
+                  <div className="p-4">
+                    <div className="mx-auto w-full max-w-xl">
+                      <DrawerHeader>
+                        <DrawerTitle>
+                          Les points de la partie de fléchette
+                        </DrawerTitle>
+                        <DrawerDescription>
+                          Voici les différents points que vous pouvez obtenir
+                          lors d'une partie de fléchette.
+                        </DrawerDescription>
+                      </DrawerHeader>
+                    </div>
+                    <div className="flex justify-center overflow-x-auto space-x-4">
+                      {POINTS.map((point) => (
+                        <Card key={point.label} className="mb-4 w-58">
+                          <CardHeader>
+                            <CardTitle>{point.label}</CardTitle>
+                          </CardHeader>
+                          <CardContent className="px-4">
+                            <div className="w-full h-32 sm:h-24 flex items-center justify-center">
+                              <img
+                                src={point.illustration}
+                                alt={point.label}
+                                className="object-contain h-full"
+                              />
+                            </div>
+                          </CardContent>
+                          <CardFooter>
+                            <p className="text-center break-words">
+                              {point.description}
+                            </p>
+                          </CardFooter>
+                        </Card>
+                      ))}
+                    </div>
+                    <div className="mx-auto w-full max-w-sm">
+                      <DrawerFooter>
+                        <DrawerClose asChild>
+                          <Button variant="outline">Fermer</Button>
+                        </DrawerClose>
+                      </DrawerFooter>
+                    </div>
+                  </div>
+                </DrawerContent>
+              </Drawer>
+              <Button variant="secondary" onClick={() => this.stop()}>
+                Arrêter la partie
+              </Button>
+            </div>
+
+            <div className="mt-6 mr-3 w-10/12">
+              <h3 className="text-2xl font-bold tracking-tighter mb-4">
+                Classement
+              </h3>
+              <table className="min-w-full bg-white">
+                <thead>
+                  <tr>
+                    <th className="py-2">Place</th>
+                    <th className="py-2">Joueur</th>
+                    <th className="py-2">Points</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {this.game.getPlayersByScore().map((player, index) => (
+                    <tr key={player.getId()}>
+                      <td className="border px-4 py-2">{getMedal(index)}</td>
+                      <td className="border px-4 py-2">{player.getName()}</td>
+                      <td className="border px-4 py-2">{player.points}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
-      </div>
+      </>
     );
   }
 }
