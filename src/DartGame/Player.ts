@@ -52,6 +52,14 @@ export class Player {
   }
 
   /**
+   * Set the player's points
+   * @param points - points
+   */
+  setPoints(points: number): void {
+    this.points = points;
+  }
+
+  /**
    * Get the player's name
    * @returns name
    */

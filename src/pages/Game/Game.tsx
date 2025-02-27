@@ -40,6 +40,8 @@ import {
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { AlertCircle } from "lucide-react";
 
 import {
@@ -62,6 +64,7 @@ interface GameState {
   scores: number[];
   multipliers: string[];
   validated: boolean;
+  simplifiedScore: number | null;
 }
 
 class Game extends Component<GameProps, GameState> {
@@ -74,24 +77,43 @@ class Game extends Component<GameProps, GameState> {
       scores: [0, 0, 0],
       multipliers: ["single", "single", "single"],
       validated: false,
+      simplifiedScore: null,
     };
   }
 
-  handleInputChange = (index: number, value: string) => {
+  handleInputChange = (value: string, index?: number) => {
     if (isNaN(parseInt(value))) {
       value = "0";
     }
 
-    if (parseInt(value) > 50 || parseInt(value) < 0) {
-      value = "0";
+    if (index != null) {
+      this.setState({ simplifiedScore: null });
+
+      if (parseInt(value) > 25 || parseInt(value) < 0) {
+        value = "0";
+      }
+
+      const scores = [...this.state.scores];
+      scores[index] = parseInt(value);
+
+      this.updatePoints(scores, [...this.state.multipliers]);
+
+      this.setState({ scores });
+    } else {
+      this.setState({ scores: [0, 0, 0] });
+      this.setState({ multipliers: ["single", "single", "single"] });
+
+      if (parseInt(value) > 180 || parseInt(value) < 0) {
+        value = "0";
+      }
+
+      this.setState({ simplifiedScore: parseInt(value) });
+
+      this.updatePoints(
+        [parseInt(value), 0, 0],
+        ["single", "single", "single"]
+      );
     }
-
-    const scores = [...this.state.scores];
-    scores[index] = parseInt(value);
-
-    this.updatePoints(scores, [...this.state.multipliers]);
-
-    this.setState({ scores });
   };
 
   handleSelectChange = (index: number, value: string) => {
@@ -101,6 +123,9 @@ class Game extends Component<GameProps, GameState> {
     this.updatePoints([...this.state.scores], multipliers);
 
     this.setState({ multipliers });
+    if (this.state.simplifiedScore) {
+      this.setState({ simplifiedScore: null });
+    }
   };
 
   updatePoints = (scores: number[], multipliers: string[]) => {
@@ -111,7 +136,13 @@ class Game extends Component<GameProps, GameState> {
   };
 
   handleSubmit = () => {
-    this.game.getCurrentPlayer().addPoints(this.totalNewPoints);
+    if (this.state.simplifiedScore) {
+      this.totalNewPoints = this.state.simplifiedScore;
+    }
+
+    if (this.game.getCurrentPlayer().points + this.totalNewPoints <= 501) {
+      this.game.getCurrentPlayer().addPoints(this.totalNewPoints);
+    }
     this.game.nextPlayer();
     this.setState({
       scores: [0, 0, 0],
@@ -127,6 +158,11 @@ class Game extends Component<GameProps, GameState> {
 
   stop() {
     this.game.stop();
+    window.location.reload();
+  }
+
+  restart() {
+    this.game.restart();
     window.location.reload();
   }
 
@@ -152,16 +188,38 @@ class Game extends Component<GameProps, GameState> {
             </BreadcrumbList>
           </Breadcrumb>
         </div>
-        <div className="flex">
-          <div className="w-2/3 p-4 ml-6">
+        <div className="flex flex-col md:flex-row">
+          <div className="w-full md:w-2/3 p-4 ml-6">
             <div>
               <h1 className="text-4xl font-bold tracking-tighter mt-6">
                 Au tour de {this.game.getCurrentPlayer().getName()}
               </h1>
 
-              <h4 className="text-2xl font-bold tracking-tighter mt-4">
+              <h4
+                className={`text-2xl font-bold tracking-tighter mt-4 ${
+                  501 -
+                    this.game.getCurrentPlayer().points -
+                    this.totalNewPoints <
+                  0
+                    ? "text-red-500"
+                    : ""
+                }`}
+              >
                 {this.game.getCurrentPlayer().points} points,{" "}
-                {501 - this.game.getCurrentPlayer().points} restants
+                {501 -
+                  this.game.getCurrentPlayer().points -
+                  this.totalNewPoints <
+                0
+                  ? `Annulé dépassement de ${Math.abs(
+                      501 -
+                        this.game.getCurrentPlayer().points -
+                        this.totalNewPoints
+                    )} points`
+                  : `${
+                      501 -
+                      this.game.getCurrentPlayer().points -
+                      this.totalNewPoints
+                    } restants`}
               </h4>
 
               <h6 className="text-l font-bold tracking-tighter mt-4">
@@ -169,60 +227,88 @@ class Game extends Component<GameProps, GameState> {
               </h6>
             </div>
 
-            <div className="w-2/3 mt-6">
-              {[0, 1, 2].map((index) => (
-                <div key={index} className="mb-4">
+            <Tabs defaultValue="detailed" className="w-2/3 mt-6">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="detailed">Détaillé</TabsTrigger>
+                <TabsTrigger value="simplified">Simplifié</TabsTrigger>
+              </TabsList>
+              <TabsContent value="detailed">
+                <div>
+                  {[0, 1, 2].map((index) => (
+                    <div key={index} className="mb-4">
+                      <h2 className="text-l font-bold tracking-tighter">
+                        Fléchette {index + 1} -
+                      </h2>
+                      <div className="flex items-center space-x-4">
+                        <div className="w-3/4">
+                          <Label className="mt-4">Score</Label>
+                          <Input
+                            className="py-6"
+                            placeholder="Entrer le score"
+                            value={
+                              this.state.scores[index] != 0
+                                ? this.state.scores[index]
+                                : ""
+                            }
+                            type="number"
+                            max={25}
+                            min={0}
+                            onChange={(e) =>
+                              this.handleInputChange(e.target.value, index)
+                            }
+                          />
+                        </div>
+                        <div>
+                          <Label className="mt-4">Multiplicateur</Label>
+                          <Select
+                            value={this.state.multipliers[index] as string}
+                            onValueChange={(value) =>
+                              this.handleSelectChange(index, value)
+                            }
+                          >
+                            <SelectTrigger className="py-6">
+                              <SelectValue placeholder="Sélectionner la zone" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectGroup>
+                                <SelectLabel>Multiplicateur</SelectLabel>
+                                {MULTIPLIER.map((multiplier) => (
+                                  <SelectItem
+                                    key={multiplier.value}
+                                    value={multiplier.value}
+                                  >
+                                    <Badge>{multiplier.badge}</Badge>
+
+                                    {multiplier.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectGroup>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <Separator className="my-3" />
+                    </div>
+                  ))}
+                </div>
+              </TabsContent>
+              <TabsContent value="simplified">
+                <div>
                   <h2 className="text-l font-bold tracking-tighter">
-                    Fléchette {index + 1} -
+                    Total des fléchettes
                   </h2>
                   <Input
                     placeholder="Entrer le score"
-                    value={
-                      this.state.scores[index] != 0
-                        ? this.state.scores[index]
-                        : ""
-                    }
+                    className="py-6"
                     type="number"
-                    max={50}
+                    max={180}
                     min={0}
-                    onChange={(e) =>
-                      this.handleInputChange(index, e.target.value)
-                    }
+                    value={this.state.simplifiedScore || ""}
+                    onChange={(e) => this.handleInputChange(e.target.value)}
                   />
-
-                  <Label className="mt-4">Multiplicateur</Label>
-                  <Select
-                    value={this.state.multipliers[index] as string}
-                    onValueChange={(value) =>
-                      this.handleSelectChange(index, value)
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner la zone" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        <SelectLabel>Multiplicateur</SelectLabel>
-                        {MULTIPLIER.map((multiplier) => (
-                          <SelectItem
-                            key={multiplier.value}
-                            value={multiplier.value}
-                          >
-                            <Badge>{multiplier.badge}</Badge>
-                            <Badge variant="secondary">
-                              {multiplier.secondary}
-                            </Badge>
-                            {multiplier.label}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-
-                  <Separator className="my-3" />
                 </div>
-              ))}
-            </div>
+              </TabsContent>
+            </Tabs>
           </div>
 
           <div className="w-2/3 p-4 mt-6">
@@ -305,9 +391,18 @@ class Game extends Component<GameProps, GameState> {
                   </div>
                 </DrawerContent>
               </Drawer>
-              <Button variant="secondary" onClick={() => this.stop()}>
-                Arrêter la partie
-              </Button>
+              <div>
+                <Button
+                  className="mr-4"
+                  variant="secondary"
+                  onClick={() => this.restart()}
+                >
+                  Recommencer la partie
+                </Button>
+                <Button variant="destructive" onClick={() => this.stop()}>
+                  Arrêter la partie
+                </Button>
+              </div>
             </div>
 
             <div className="mt-6 mr-3 w-10/12">
@@ -319,7 +414,8 @@ class Game extends Component<GameProps, GameState> {
                   <tr>
                     <th className="py-2">Place</th>
                     <th className="py-2">Joueur</th>
-                    <th className="py-2">Points</th>
+                    <th className="py-2">Points gagnés</th>
+                    <th className="py-2">Points restants</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -328,6 +424,9 @@ class Game extends Component<GameProps, GameState> {
                       <td className="border px-4 py-2">{getMedal(index)}</td>
                       <td className="border px-4 py-2">{player.getName()}</td>
                       <td className="border px-4 py-2">{player.points}</td>
+                      <td className="border px-4 py-2">
+                        {501 - player.points}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

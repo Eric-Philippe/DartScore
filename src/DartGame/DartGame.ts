@@ -72,6 +72,17 @@ export class DartGame {
   }
 
   /**
+   * Restart the game
+   * Keep the players and start a new game
+   */
+  restart() {
+    this.currentRound = 0;
+    this.currentPlayerIndex = 0;
+    this.players.forEach((player) => player.setPoints(0));
+    this.save();
+  }
+
+  /**
    * Get players array
    * @returns players array
    */
