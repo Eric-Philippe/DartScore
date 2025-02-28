@@ -161,8 +161,6 @@ class Home extends Component<HomeProps, HomeState> {
                       </CardFooter>
                     </Card>
                   ))}
-                  {/** Plus button */}
-
                   <Button onClick={this.addPlayer}>+</Button>
                 </div>
                 <div className="mx-auto w-full max-w-sm">

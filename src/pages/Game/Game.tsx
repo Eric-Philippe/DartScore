@@ -1,4 +1,5 @@
 import { Component } from "react";
+import Confetti from "react-confetti";
 
 import {
   Select,
@@ -56,6 +57,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 
+const MAX_SCORE = 501;
+
 interface GameProps {
   game: DartGame;
 }
@@ -65,6 +68,7 @@ interface GameState {
   multipliers: string[];
   validated: boolean;
   simplifiedScore: number | null;
+  gameEnded: boolean;
 }
 
 class Game extends Component<GameProps, GameState> {
@@ -78,6 +82,7 @@ class Game extends Component<GameProps, GameState> {
       multipliers: ["single", "single", "single"],
       validated: false,
       simplifiedScore: null,
+      gameEnded: false,
     };
   }
 
@@ -140,14 +145,24 @@ class Game extends Component<GameProps, GameState> {
       this.totalNewPoints = this.state.simplifiedScore;
     }
 
-    if (this.game.getCurrentPlayer().points + this.totalNewPoints <= 501) {
+    if (
+      this.game.getCurrentPlayer().points + this.totalNewPoints <=
+      MAX_SCORE
+    ) {
       this.game.getCurrentPlayer().addPoints(this.totalNewPoints);
+
+      if (this.game.getCurrentPlayer().getPoints() == MAX_SCORE) {
+        this.setState({ gameEnded: true });
+      } else {
+        this.game.nextPlayer();
+      }
     }
-    this.game.nextPlayer();
+
     this.setState({
       scores: [0, 0, 0],
       multipliers: ["single", "single", "single"],
       validated: true,
+      simplifiedScore: 0,
     });
     this.totalNewPoints = 0;
 
@@ -169,6 +184,7 @@ class Game extends Component<GameProps, GameState> {
   render() {
     return (
       <>
+        {this.state.gameEnded && <Confetti />}
         <div className="p-4">
           <Breadcrumb>
             <BreadcrumbList>
@@ -197,7 +213,7 @@ class Game extends Component<GameProps, GameState> {
 
               <h4
                 className={`text-2xl font-bold tracking-tighter mt-4 ${
-                  501 -
+                  MAX_SCORE -
                     this.game.getCurrentPlayer().points -
                     this.totalNewPoints <
                   0
@@ -206,17 +222,17 @@ class Game extends Component<GameProps, GameState> {
                 }`}
               >
                 {this.game.getCurrentPlayer().points} points,{" "}
-                {501 -
+                {MAX_SCORE -
                   this.game.getCurrentPlayer().points -
                   this.totalNewPoints <
                 0
                   ? `Annulé dépassement de ${Math.abs(
-                      501 -
+                      MAX_SCORE -
                         this.game.getCurrentPlayer().points -
                         this.totalNewPoints
                     )} points`
                   : `${
-                      501 -
+                      MAX_SCORE -
                       this.game.getCurrentPlayer().points -
                       this.totalNewPoints
                     } restants`}
@@ -335,8 +351,18 @@ class Game extends Component<GameProps, GameState> {
               {this.game.getPlayers().length}
             </h6>
 
+            {this.state.gameEnded && (
+              <h6 className="text-2xl front-bold tracking-tighter mt-4">
+                {`${this.game.getCurrentPlayer().getName()} a gagné !`}
+              </h6>
+            )}
+
             <div className="mt-6">
-              <Button className="mb-4 mr-3" onClick={this.handleSubmit}>
+              <Button
+                className="mb-4 mr-3"
+                onClick={this.handleSubmit}
+                disabled={this.state.gameEnded}
+              >
                 Confirmer les points
               </Button>
               <Drawer direction="top">
@@ -425,7 +451,7 @@ class Game extends Component<GameProps, GameState> {
                       <td className="border px-4 py-2">{player.getName()}</td>
                       <td className="border px-4 py-2">{player.points}</td>
                       <td className="border px-4 py-2">
-                        {501 - player.points}
+                        {MAX_SCORE - player.points}
                       </td>
                     </tr>
                   ))}
