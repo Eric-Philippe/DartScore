@@ -150,12 +150,12 @@ class Game extends Component<GameProps, GameState> {
       MAX_SCORE
     ) {
       this.game.getCurrentPlayer().addPoints(this.totalNewPoints);
+    }
 
-      if (this.game.getCurrentPlayer().getPoints() == MAX_SCORE) {
-        this.setState({ gameEnded: true });
-      } else {
-        this.game.nextPlayer();
-      }
+    if (this.game.getCurrentPlayer().getPoints() == MAX_SCORE) {
+      this.setState({ gameEnded: true });
+    } else {
+      this.game.nextPlayer();
     }
 
     this.setState({

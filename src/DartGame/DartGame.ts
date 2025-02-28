@@ -79,6 +79,8 @@ export class DartGame {
     this.currentRound = 0;
     this.currentPlayerIndex = 0;
     this.players.forEach((player) => player.setPoints(0));
+    this.players.forEach((player) => player.generateNewId());
+    this.players.sort((a, b) => a.getId() - b.getId());
     this.save();
   }
 

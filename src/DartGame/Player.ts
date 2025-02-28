@@ -59,6 +59,10 @@ export class Player {
     this.points = points;
   }
 
+  generateNewId(): void {
+    this.id = Math.floor(Math.random() * 1000000);
+  }
+
   /**
    * Get the player's name
    * @returns name
