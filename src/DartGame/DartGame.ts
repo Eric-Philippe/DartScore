@@ -10,6 +10,8 @@ const DART_GAME_REGEX = /DartGame\(d:(\d+),r:(\d+),pi:(\d+),p:\[(.*)\]\)/;
  * @param currentPlayerIndex - current player index
  */
 export class DartGame {
+  static MAX_SCORE = 501;
+
   private players: Player[] = [];
   private startDate;
   private currentRound;
@@ -241,5 +243,48 @@ export class DartGame {
     localStorage.removeItem("game");
     localStorage.setItem("error", "Invalid game state");
     window.location.href = "/";
+  }
+
+  /**
+   * If the player has less than 170 points remaining, advise the best move
+   * The best move must end on the last arrow on a double
+   * We will prefer a move with a bigger first arrows and a smaller to score the last arrow
+   *
+   * Ex: 170 left : (T20) + (T20) + (D25) = 170
+   * Ex: 141 left : (T20) + (T19) + (D12) = 141
+   */
+  static adviseMoove(points: number): string[] {
+    const remainingScore = this.MAX_SCORE - points;
+    if (remainingScore > 170) return [];
+
+    const singles = Array.from({ length: 20 }, (_, i) => i + 1).concat(25);
+    const doubles = singles.map((n) => n * 2);
+    const triples = singles.slice(0, -1).map((n) => n * 3);
+    const bestMooves: string[] = [];
+
+    const addMoove = (prefix: string, score: number) => {
+      doubles.forEach((d) => {
+        if (score + d === remainingScore)
+          bestMooves.push(`${prefix} D${d / 2}`);
+      });
+    };
+
+    addMoove("", 0);
+    singles.forEach((s) => addMoove(`S${s}`, s));
+    triples.forEach((t) => addMoove(`T${t / 3}`, t));
+    singles.forEach((s1) =>
+      singles.forEach((s2) => addMoove(`S${s1} S${s2}`, s1 + s2))
+    );
+    singles.forEach((s) =>
+      triples.forEach((t) => addMoove(`S${s} T${t / 3}`, s + t))
+    );
+    triples.forEach((t1) =>
+      triples.forEach((t2) => addMoove(`T${t1 / 3} T${t2 / 3}`, t1 + t2))
+    );
+    triples.forEach((t) =>
+      singles.forEach((s) => addMoove(`T${t / 3} S${s}`, t + s))
+    );
+
+    return bestMooves;
   }
 }

@@ -57,7 +57,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 
-const MAX_SCORE = 501;
+const MAX_SCORE = DartGame.MAX_SCORE;
 
 interface GameProps {
   game: DartGame;
@@ -237,6 +237,19 @@ class Game extends Component<GameProps, GameState> {
                       this.totalNewPoints
                     } restants`}
               </h4>
+
+              {DartGame.adviseMoove(
+                this.game.getCurrentPlayer().getPoints() + this.totalNewPoints
+              ).length > 0 && (
+                <h6 className="text-l font-bold tracking-tighter mt-4">
+                  {`Terminable avec : ${
+                    DartGame.adviseMoove(
+                      this.game.getCurrentPlayer().getPoints() +
+                        this.totalNewPoints
+                    )[0]
+                  }`}
+                </h6>
+              )}
 
               <h6 className="text-l font-bold tracking-tighter mt-4">
                 {this.totalNewPoints} points à ajouter
