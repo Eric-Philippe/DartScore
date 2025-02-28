@@ -285,6 +285,39 @@ export class DartGame {
       singles.forEach((s) => addMoove(`T${t / 3} S${s}`, t + s))
     );
 
+    bestMooves.sort((a, b) => {
+      // Compare by the number of elements after splitting with " "
+      const aParts = a.split(" ");
+      const bParts = b.split(" ");
+      const partsDifference = aParts.length - bParts.length;
+
+      if (partsDifference !== 0) {
+        return partsDifference;
+      }
+
+      // Compare by the combined weight of actions
+      const getWeight = (part: string) => {
+        if (part.startsWith("S")) return 1;
+        if (part.startsWith("D")) return 2;
+        if (part.startsWith("T")) return 3;
+        return 0;
+      };
+
+      const aWeight = aParts.reduce((sum, part) => sum + getWeight(part), 0);
+      const bWeight = bParts.reduce((sum, part) => sum + getWeight(part), 0);
+      const weightDifference = aWeight - bWeight;
+
+      if (weightDifference !== 0) {
+        return weightDifference;
+      }
+
+      // If the number of elements and combined weight are the same, compare by the last "D" value
+      const elA = aParts.pop() as string;
+      const elB = bParts.pop() as string;
+
+      return parseInt(elA.split("D")[1]) - parseInt(elB.split("D")[1]);
+    });
+
     return bestMooves;
   }
 }

@@ -29,6 +29,12 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer";
 
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+
 import { Badge } from "@/components/ui/badge";
 
 import {
@@ -182,6 +188,10 @@ class Game extends Component<GameProps, GameState> {
   }
 
   render() {
+    const advisedMoves = DartGame.adviseMoove(
+      this.game.getCurrentPlayer().getPoints() + this.totalNewPoints
+    );
+
     return (
       <>
         {this.state.gameEnded && <Confetti />}
@@ -238,17 +248,22 @@ class Game extends Component<GameProps, GameState> {
                     } restants`}
               </h4>
 
-              {DartGame.adviseMoove(
-                this.game.getCurrentPlayer().getPoints() + this.totalNewPoints
-              ).length > 0 && (
-                <h6 className="text-l font-bold tracking-tighter mt-4">
-                  {`Terminable avec : ${
-                    DartGame.adviseMoove(
-                      this.game.getCurrentPlayer().getPoints() +
-                        this.totalNewPoints
-                    )[0]
-                  }`}
-                </h6>
+              {advisedMoves.length > 0 && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button className="mt-4">
+                      {`Terminable avec : ${advisedMoves[0]}`}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 max-h-64 overflow-y-auto">
+                    {advisedMoves.slice(0, 50).map((moove, index) => (
+                      <div key={moove} className="flex items-center space-x-4">
+                        <Badge>{index + 1}</Badge>
+                        <p className="text-l">{moove}</p>
+                      </div>
+                    ))}
+                  </PopoverContent>
+                </Popover>
               )}
 
               <h6 className="text-l font-bold tracking-tighter mt-4">
@@ -455,6 +470,7 @@ class Game extends Component<GameProps, GameState> {
                     <th className="py-2">Joueur</th>
                     <th className="py-2">Points gagnés</th>
                     <th className="py-2">Points restants</th>
+                    <th className="py-2">Actions conseillées</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -465,6 +481,11 @@ class Game extends Component<GameProps, GameState> {
                       <td className="border px-4 py-2">{player.points}</td>
                       <td className="border px-4 py-2">
                         {MAX_SCORE - player.points}
+                      </td>
+                      <td className="border px-4 py-2">
+                        {DartGame.adviseMoove(player.points).length > 0
+                          ? DartGame.adviseMoove(player.points)[0]
+                          : "Aucun"}
                       </td>
                     </tr>
                   ))}
