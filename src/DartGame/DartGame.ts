@@ -1,9 +1,10 @@
 import { Player } from "./Player";
 
+/** Regex to match the encoded string */
 const DART_GAME_REGEX = /DartGame\(d:(\d+),r:(\d+),pi:(\d+),p:\[(.*)\]\)/;
 
 /**
- * Main Dart Game class
+ * Main Dart Game class, can fit inside a single string
  * @param players - players in the game
  * @param startDate - start date
  * @param currentRound - current round
@@ -11,6 +12,7 @@ const DART_GAME_REGEX = /DartGame\(d:(\d+),r:(\d+),pi:(\d+),p:\[(.*)\]\)/;
  */
 export class DartGame {
   static MAX_SCORE = 501;
+  static MAX_SCORE_PER_ROUND = 180;
 
   private players: Player[] = [];
   private startDate;
@@ -30,17 +32,15 @@ export class DartGame {
     currentRound = 0,
     currentPlayerIndex = 0
   ) {
-    if (players.length === 0) {
+    if (players.length === 0)
       throw new Error("At least one player is required");
-    }
 
     if (
       currentPlayerIndex >= players.length ||
       currentPlayerIndex < 0 ||
       currentRound < 0
-    ) {
+    )
       throw new Error("Invalid game state");
-    }
 
     this.startDate = startDate;
     this.currentRound = currentRound;
@@ -86,10 +86,62 @@ export class DartGame {
     this.save();
   }
 
+  /**
+   * Error method
+   * Remove the game state from local storage
+   * Redirect to the home page with an error message
+   */
+  static error() {
+    localStorage.removeItem("game");
+    localStorage.setItem("error", "Invalid game state");
+    window.location.href = "/";
+  }
+
+  /**
+   * Method to know if the game is ended
+   * @returns true if one of the players has reached the max score
+   */
   isGameEnded(): boolean {
     return this.players.some(
       (player) => player.getPoints() === DartGame.MAX_SCORE
     );
+  }
+
+  /**
+   * Method to know if the given player is the current player
+   * @param player - player to check
+   * @returns true if the player is the current player
+   */
+  isCurrentPlayer(player: Player): boolean {
+    return this.getCurrentPlayer().getId() === player.getId();
+  }
+
+  /**
+   * Get the start time hour:minute
+   * @returns start time
+   */
+  getStartTime(): string {
+    const date = new Date(this.startDate);
+    return `${date.getHours().toString().padStart(2, "0")}:${date
+      .getMinutes()
+      .toString()
+      .padStart(2, "0")}`;
+  }
+
+  /**
+   * Get current round
+   * @returns current round
+   */
+  getCurrentRound(): number {
+    return this.currentRound;
+  }
+
+  /**
+   * Get current player index
+   * @returns current player index
+   */
+  getCurrentPlayerIndex(): number {
+    return this.currentPlayerIndex;
   }
 
   /**
@@ -138,56 +190,15 @@ export class DartGame {
   }
 
   /**
-   * Get current round
-   * @returns current round
-   */
-  getCurrentRound(): number {
-    return this.currentRound;
-  }
-
-  /**
-   * Get current player index
-   * @returns current player index
-   */
-  getCurrentPlayerIndex(): number {
-    return this.currentPlayerIndex;
-  }
-
-  /**
-   * Get the start time hour:minute
-   * @returns start time
-   */
-  getStartTime(): string {
-    const date = new Date(this.startDate);
-    const minutes = date.getMinutes().toString();
-    const hours = date.getHours().toString();
-
-    return `${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}`;
-  }
-
-  /**
    * Next player, add one round if all players played
    * @returns next player
    */
   nextPlayer(): Player {
-    this.currentPlayerIndex++;
-    if (this.currentPlayerIndex >= this.players.length) {
-      this.currentPlayerIndex = 0;
-      this.currentRound++;
-    }
-
+    this.currentPlayerIndex =
+      (this.currentPlayerIndex + 1) % this.players.length;
+    if (this.currentPlayerIndex === 0) this.currentRound++;
     this.save();
-
     return this.getCurrentPlayer();
-  }
-
-  /**
-   * Method to know if the given player is the current player
-   * @param player - player to check
-   * @returns true if the player is the current player
-   */
-  isCurrentPlayer(player: Player): boolean {
-    return this.getCurrentPlayer().getId() === player.getId();
   }
 
   /**
@@ -218,37 +229,26 @@ export class DartGame {
    * @returns - DartGame instance
    */
   static decodeFromString(encoded: string): DartGame {
-    const decodedString = atob(encoded);
-    const utf8Decoder = new TextDecoder();
-    const decodedBytes = new Uint8Array(
-      [...decodedString].map((char) => char.charCodeAt(0))
+    const decoded = new TextDecoder().decode(
+      Uint8Array.from(atob(encoded), (c) => c.charCodeAt(0))
     );
-    const decoded = utf8Decoder.decode(decodedBytes);
-
     if (!DART_GAME_REGEX.test(decoded)) this.error();
 
     const matches = decoded.match(DART_GAME_REGEX);
+    if (!matches) throw new Error("Invalid encoded string");
 
-    if (!matches) {
-      throw new Error("Invalid encoded string");
-    }
+    const [, startDate, currentRound, currentPlayerIndex, playersStr] = matches;
+    const players = playersStr
+      .split("),")
+      .map((s) => Player.decodeFromString(s + ")"))
+      .sort((a, b) => a.getId() - b.getId());
 
-    const startDate = parseInt(matches[1]);
-    const currentRound = parseInt(matches[2]);
-    const currentPlayerIndex = parseInt(matches[3]);
-    const players = matches[4].split("),").map((playerString) => {
-      return Player.decodeFromString(playerString + ")");
-    });
-
-    players.sort((a, b) => a.getId() - b.getId());
-
-    return new DartGame(players, startDate, currentRound, currentPlayerIndex);
-  }
-
-  static error() {
-    localStorage.removeItem("game");
-    localStorage.setItem("error", "Invalid game state");
-    window.location.href = "/";
+    return new DartGame(
+      players,
+      parseInt(startDate),
+      parseInt(currentRound),
+      parseInt(currentPlayerIndex)
+    );
   }
 
   /**

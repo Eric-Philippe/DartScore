@@ -1,3 +1,4 @@
+/** Regex to match the encoded string */
 const PLAYER_REGEX = /Player\(i:(\d+),n:(.*),p:(\d+)\)/;
 
 /**

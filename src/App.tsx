@@ -1,6 +1,5 @@
 import Home from "./pages/Home/Home";
 
-import "./App.css";
 import { useState } from "react";
 import { DartGame } from "./DartGame/DartGame";
 import Game from "./pages/Game/Game";

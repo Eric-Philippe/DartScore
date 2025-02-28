@@ -1,503 +1,235 @@
-import { Component } from "react";
+import React from "react";
 import Confetti from "react-confetti";
 
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  Button,
+} from "@/components/ui";
+import { Ranking } from "@/components/game/Ranking";
+import { AlertSubmit } from "@/components/game/AlertSubmit";
+import { BreadcrumbPlayers } from "@/components/game/BreadcrumbPlayers";
+import DetailedInputTab from "@/components/game/DetailedInputTab";
+import SimplifiedInputTab from "@/components/game/SimplifiedInputTab";
+import { Overflow } from "@/components/game/Overflow";
+import { AdvisedMoves } from "@/components/game/AdvisedMoves";
+import { Tuto } from "@/components/game/Tuto";
 
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer";
-
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-
-import { Badge } from "@/components/ui/badge";
-
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-import { AlertCircle } from "lucide-react";
-
-import {
-  getMedal,
-  MULTIPLIER,
-  multiplierToNumber,
-  POINTS,
-} from "@/assets/DartGameRessources";
+import { multiplierToNumber } from "@/assets/DartGameRessources";
 import { DartGame } from "@/DartGame/DartGame";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 
-const MAX_SCORE = DartGame.MAX_SCORE;
+const NOTIF_DURATION = 2000;
+const EMPTY_ARRAY = [0, 0, 0];
+const SINGLE_ARRAY = ["single", "single", "single"];
 
 interface GameProps {
   game: DartGame;
 }
 
-interface GameState {
-  scores: number[];
-  multipliers: string[];
-  validated: boolean;
-  simplifiedScore: number | null;
-  gameEnded: boolean;
-}
+export const Game: React.FC<GameProps> = ({ game }) => {
+  const [totalNewPoints, setTotalNewPoints] = React.useState(0);
+  const [scores, setScores] = React.useState(EMPTY_ARRAY);
+  const [multipliers, setMultipliers] = React.useState(SINGLE_ARRAY);
+  const [validated, setValidated] = React.useState(false);
+  const [simplifiedScore, setSimplifiedScore] = React.useState<number | null>(
+    null
+  );
+  const [gameEnded, setGameEnded] = React.useState(false);
 
-class Game extends Component<GameProps, GameState> {
-  game = this.props.game;
-  totalNewPoints = 0;
-
-  constructor(props: GameProps) {
-    super(props);
-    this.state = {
-      scores: [0, 0, 0],
-      multipliers: ["single", "single", "single"],
-      validated: false,
-      simplifiedScore: null,
-      gameEnded: this.game.isGameEnded(),
-    };
-  }
-
-  handleInputChange = (value: string, index?: number) => {
+  const handleInputChange = (value: string, index?: number) => {
     let parsedValue = parseInt(value);
 
-    if (isNaN(parsedValue) || parsedValue < 0) {
-      parsedValue = 0;
-    }
+    if (isNaN(parsedValue) || parsedValue < 0) parsedValue = 0;
 
     if (index != null) {
-      this.setState({ simplifiedScore: null });
+      setSimplifiedScore(null);
 
       if (parsedValue > 25) {
-        value = "0";
-      }
-
-      const scores = [...this.state.scores];
-      scores[index] = parseInt(value);
-
-      this.updatePoints(scores, [...this.state.multipliers]);
-
-      this.setState({ scores });
-    } else {
-      this.setState({ scores: [0, 0, 0] });
-      this.setState({ multipliers: ["single", "single", "single"] });
-
-      if (parsedValue > 180) {
         parsedValue = 0;
       }
 
-      this.setState({ simplifiedScore: parsedValue });
+      scores[index] = parsedValue;
+      setScores([...scores]);
 
-      this.updatePoints([parsedValue, 0, 0], ["single", "single", "single"]);
+      updatePoints(scores, multipliers);
+    } else {
+      if (parsedValue > DartGame.MAX_SCORE_PER_ROUND) parsedValue = 0;
+
+      setScores(EMPTY_ARRAY);
+      setMultipliers(SINGLE_ARRAY);
+      setSimplifiedScore(parsedValue);
+
+      updatePoints(parsedValue, SINGLE_ARRAY);
     }
   };
 
-  handleSelectChange = (index: number, value: string) => {
-    const multipliers = [...this.state.multipliers];
-    multipliers[index] = value;
+  const handleSelectChange = (index: number, value: string) => {
+    const new_multipliers = [...multipliers];
+    new_multipliers[index] = value;
 
-    this.updatePoints([...this.state.scores], multipliers);
+    updatePoints([...scores], new_multipliers);
 
-    this.setState({ multipliers });
-    if (this.state.simplifiedScore) {
-      this.setState({ simplifiedScore: null });
+    setMultipliers(new_multipliers);
+    setSimplifiedScore(null);
+  };
+
+  const updatePoints = (scores: number[] | number, multipliers: string[]) => {
+    setTotalNewPoints(0);
+    if (typeof scores === "number") setTotalNewPoints(scores);
+    else {
+      for (let i = 0; i < scores.length; i++) {
+        setTotalNewPoints((prev) => {
+          return prev + scores[i] * multiplierToNumber(multipliers[i]);
+        });
+      }
     }
   };
 
-  updatePoints = (scores: number[], multipliers: string[]) => {
-    this.totalNewPoints = 0;
-    scores.forEach((score, index) => {
-      this.totalNewPoints += score * multiplierToNumber(multipliers[index]);
-    });
-  };
+  const handleSubmit = () => {
+    const currentPlayer = game.getCurrentPlayer();
+    const newPoints = simplifiedScore || totalNewPoints;
 
-  handleSubmit = () => {
-    const { simplifiedScore } = this.state;
-    const currentPlayer = this.game.getCurrentPlayer();
-    const newPoints = simplifiedScore || this.totalNewPoints;
-
-    if (currentPlayer.points + newPoints <= MAX_SCORE) {
+    if (currentPlayer.points + newPoints <= DartGame.MAX_SCORE) {
       currentPlayer.addPoints(newPoints);
     }
 
-    if (currentPlayer.getPoints() === MAX_SCORE) {
-      this.setState({ gameEnded: true });
-      this.game.save();
+    if (currentPlayer.getPoints() === DartGame.MAX_SCORE) {
+      setGameEnded(true);
+      game.save();
     } else {
-      this.game.nextPlayer();
+      game.nextPlayer();
     }
 
-    this.setState({
-      scores: [0, 0, 0],
-      multipliers: ["single", "single", "single"],
-      validated: true,
-      simplifiedScore: 0,
-    });
-
-    this.totalNewPoints = 0;
+    setScores(EMPTY_ARRAY);
+    setMultipliers(SINGLE_ARRAY);
+    setValidated(true);
+    setSimplifiedScore(0);
+    setTotalNewPoints(0);
 
     setTimeout(() => {
-      this.setState({ validated: false });
-    }, 2000);
+      setValidated(false);
+    }, NOTIF_DURATION);
   };
 
-  stop() {
-    this.game.stop();
+  const stop = () => {
+    game.stop();
     window.location.reload();
-  }
+  };
 
-  restart() {
-    this.game.restart();
+  const restart = () => {
+    game.restart();
     window.location.reload();
-  }
+  };
+  return (
+    <>
+      {gameEnded && <Confetti />}
+      <BreadcrumbPlayers game={game} />
 
-  render() {
-    const advisedMoves = DartGame.adviseMoove(
-      this.game.getCurrentPlayer().getPoints() + this.totalNewPoints
-    );
+      <div className="flex flex-col md:flex-row -mt-8" id="game-container">
+        <div className="w-full md:w-2/3 p-4 ml-0 md:ml-6" id="inputs-container">
+          <div>
+            <h1 className="text-4xl font-bold tracking-tighter mt-6">
+              Au tour de {game.getCurrentPlayer().getName()}
+            </h1>
 
-    return (
-      <>
-        {this.state.gameEnded && <Confetti />}
-        <div className="p-4">
-          <Breadcrumb>
-            <BreadcrumbList>
-              {this.game.getPlayersFromCurrent().map((player) => (
-                <>
-                  <BreadcrumbItem key={player.getId()}>
-                    {this.game.isCurrentPlayer(player) ? (
-                      <BreadcrumbPage>{player.getName()}</BreadcrumbPage>
-                    ) : (
-                      player.getName()
-                    )}
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator />
-                </>
-              ))}
-              <BreadcrumbItem key="etc">...</BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-        </div>
-        <div className="flex flex-col md:flex-row">
-          <div className="w-full md:w-2/3 p-4 ml-6">
-            <div>
-              <h1 className="text-4xl font-bold tracking-tighter mt-6">
-                Au tour de {this.game.getCurrentPlayer().getName()}
-              </h1>
+            <Overflow game={game} totalNewPoints={totalNewPoints} />
 
-              <h4
-                className={`text-2xl font-bold tracking-tighter mt-4 ${
-                  MAX_SCORE -
-                    this.game.getCurrentPlayer().points -
-                    this.totalNewPoints <
-                  0
-                    ? "text-red-500"
-                    : ""
-                }`}
-              >
-                {this.game.getCurrentPlayer().points} points,{" "}
-                {MAX_SCORE -
-                  this.game.getCurrentPlayer().points -
-                  this.totalNewPoints <
-                0
-                  ? `Annulé dépassement de ${Math.abs(
-                      MAX_SCORE -
-                        this.game.getCurrentPlayer().points -
-                        this.totalNewPoints
-                    )} points`
-                  : `${
-                      MAX_SCORE -
-                      this.game.getCurrentPlayer().points -
-                      this.totalNewPoints
-                    } restants`}
-              </h4>
+            <AdvisedMoves game={game} totalNewPoints={totalNewPoints} />
 
-              {advisedMoves.length > 0 && (
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button className="mt-4">
-                      {`Terminable avec : ${advisedMoves[0]}`}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80 max-h-64 overflow-y-auto">
-                    {advisedMoves.slice(0, 50).map((moove, index) => (
-                      <div key={moove} className="flex items-center space-x-4">
-                        <Badge>{index + 1}</Badge>
-                        <p className="text-l">{moove}</p>
-                      </div>
-                    ))}
-                  </PopoverContent>
-                </Popover>
-              )}
-
-              <h6 className="text-l font-bold tracking-tighter mt-4">
-                {this.totalNewPoints} points à ajouter
-              </h6>
-            </div>
-
-            <Tabs defaultValue="detailed" className="w-2/3 mt-6">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="detailed">Détaillé</TabsTrigger>
-                <TabsTrigger value="simplified">Simplifié</TabsTrigger>
-              </TabsList>
-              <TabsContent value="detailed">
-                <div>
-                  {[0, 1, 2].map((index) => (
-                    <div key={index} className="mb-4">
-                      <h2 className="text-l font-bold tracking-tighter">
-                        Fléchette {index + 1} -
-                      </h2>
-                      <div className="flex items-center space-x-4">
-                        <div className="w-3/4">
-                          <Label className="mt-4">Score</Label>
-                          <Input
-                            className="py-6"
-                            placeholder="Entrer le score"
-                            disabled={this.state.gameEnded}
-                            value={
-                              this.state.scores[index] != 0
-                                ? this.state.scores[index]
-                                : ""
-                            }
-                            type="number"
-                            max={25}
-                            min={0}
-                            onChange={(e) =>
-                              this.handleInputChange(e.target.value, index)
-                            }
-                          />
-                        </div>
-                        <div>
-                          <Label className="mt-4">Multiplicateur</Label>
-                          <Select
-                            disabled={this.state.gameEnded}
-                            value={this.state.multipliers[index] as string}
-                            onValueChange={(value) =>
-                              this.handleSelectChange(index, value)
-                            }
-                          >
-                            <SelectTrigger className="py-6">
-                              <SelectValue placeholder="Sélectionner la zone" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectGroup>
-                                <SelectLabel>Multiplicateur</SelectLabel>
-                                {MULTIPLIER.map((multiplier) => (
-                                  <SelectItem
-                                    key={multiplier.value}
-                                    value={multiplier.value}
-                                  >
-                                    <Badge>{multiplier.badge}</Badge>
-
-                                    {multiplier.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectGroup>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                      <Separator className="my-3" />
-                    </div>
-                  ))}
-                </div>
-              </TabsContent>
-              <TabsContent value="simplified">
-                <div>
-                  <h2 className="text-l font-bold tracking-tighter">
-                    Total des fléchettes
-                  </h2>
-                  <Input
-                    placeholder="Entrer le score"
-                    disabled={this.state.gameEnded}
-                    className="py-6"
-                    type="number"
-                    max={180}
-                    min={0}
-                    value={this.state.simplifiedScore || ""}
-                    onChange={(e) => this.handleInputChange(e.target.value)}
-                  />
-                </div>
-              </TabsContent>
-            </Tabs>
+            <h6 className="text-l font-bold tracking-tighter mt-4">
+              {totalNewPoints} points à ajouter
+            </h6>
           </div>
 
-          <div className="w-2/3 p-4 mt-6">
-            {this.state.validated && (
-              <Alert variant="default" className="mb-6">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Prochain round</AlertTitle>
-                <AlertDescription>
-                  Les points ont été ajoutés avec succès.
-                </AlertDescription>
-              </Alert>
-            )}
-            <h3 className="text-3xl font-bold tracking-tighter">
-              Partie de fléchette
-            </h3>
-
-            <h5 className="text-l font-bold tracking-tighter">
-              Commencé à {this.game.getStartTime()}
-            </h5>
-
-            <h6 className="text-2xl font-bold tracking-tighter mt-4">
-              Tour {this.game.getCurrentRound() + 1} -{" "}
-              {this.game.getCurrentPlayerIndex() + 1} /{" "}
-              {this.game.getPlayers().length}
-            </h6>
-
-            {this.state.gameEnded && (
-              <h6 className="text-2xl front-bold tracking-tighter mt-4">
-                {`${this.game.getCurrentPlayer().getName()} a gagné !`}
-              </h6>
-            )}
-
-            <div className="mt-6">
+          <Tabs defaultValue="detailed" className="w-full md:w-2/3 mt-6">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="detailed">Détaillé</TabsTrigger>
+              <TabsTrigger value="simplified">Simplifié</TabsTrigger>
+            </TabsList>
+            <TabsContent value="detailed">
+              <DetailedInputTab
+                scores={scores}
+                multipliers={multipliers}
+                gameEnded={gameEnded}
+                handleInputChange={handleInputChange}
+                handleSelectChange={handleSelectChange}
+              />
+            </TabsContent>
+            <TabsContent value="simplified">
+              <SimplifiedInputTab
+                simplifiedScore={simplifiedScore}
+                gameEnded={gameEnded}
+                handleInputChange={handleInputChange}
+              />
+            </TabsContent>
+            <div className="block md:hidden mt-4">
               <Button
                 className="mb-4 mr-3"
-                onClick={this.handleSubmit}
-                disabled={this.state.gameEnded}
+                onClick={handleSubmit}
+                disabled={gameEnded}
               >
                 Confirmer les points
               </Button>
-              <Drawer direction="top">
-                <DrawerTrigger asChild>
-                  <Button className="mr-3" variant="outline">
-                    Comment compter les points
-                  </Button>
-                </DrawerTrigger>
-                <DrawerContent>
-                  <div className="p-4">
-                    <div className="mx-auto w-full max-w-xl">
-                      <DrawerHeader>
-                        <DrawerTitle>
-                          Les points de la partie de fléchette
-                        </DrawerTitle>
-                        <DrawerDescription>
-                          Voici les différents points que vous pouvez obtenir
-                          lors d'une partie de fléchette.
-                        </DrawerDescription>
-                      </DrawerHeader>
-                    </div>
-                    <div className="flex justify-center overflow-x-auto space-x-4">
-                      {POINTS.map((point) => (
-                        <Card key={point.label} className="mb-4 w-58">
-                          <CardHeader>
-                            <CardTitle>{point.label}</CardTitle>
-                          </CardHeader>
-                          <CardContent className="px-4">
-                            <div className="w-full h-32 sm:h-24 flex items-center justify-center">
-                              <img
-                                src={point.illustration}
-                                alt={point.label}
-                                className="object-contain h-full"
-                              />
-                            </div>
-                          </CardContent>
-                          <CardFooter>
-                            <p className="text-center break-words">
-                              {point.description}
-                            </p>
-                          </CardFooter>
-                        </Card>
-                      ))}
-                    </div>
-                    <div className="mx-auto w-full max-w-sm">
-                      <DrawerFooter>
-                        <DrawerClose asChild>
-                          <Button variant="outline">Fermer</Button>
-                        </DrawerClose>
-                      </DrawerFooter>
-                    </div>
-                  </div>
-                </DrawerContent>
-              </Drawer>
-              <div>
-                <Button
-                  className="mr-4"
-                  variant="secondary"
-                  onClick={() => this.restart()}
-                >
-                  Recommencer la partie
-                </Button>
-                <Button variant="destructive" onClick={() => this.stop()}>
-                  Arrêter la partie
-                </Button>
-              </div>
+            </div>
+          </Tabs>
+        </div>
+
+        <div className="w-full md:w-2/3 p-4 mt-6" id="game-container">
+          {validated && <AlertSubmit />}
+
+          <h3 className="text-3xl font-bold tracking-tighter">
+            Partie de fléchette
+          </h3>
+
+          <h5 className="text-l font-bold tracking-tighter">
+            Commencé à {game.getStartTime()}
+          </h5>
+
+          <h6 className="text-2xl font-bold tracking-tighter mt-4">
+            Tour {game.getCurrentRound() + 1} -{" "}
+            {game.getCurrentPlayerIndex() + 1} / {game.getPlayers().length}
+          </h6>
+
+          {gameEnded && (
+            <h6 className="text-2xl front-bold tracking-tighter mt-4">
+              {`${game.getCurrentPlayer().getName()} a gagné !`}
+            </h6>
+          )}
+
+          <div className="mt-6">
+            <div className="hidden md:block">
+              <Button
+                className="mb-4 mr-3"
+                onClick={handleSubmit}
+                disabled={gameEnded}
+              >
+                Confirmer les points
+              </Button>
+
+              <Tuto />
             </div>
 
-            <div className="mt-6 mr-3 w-10/12">
-              <h3 className="text-2xl font-bold tracking-tighter mb-4">
-                Classement
-              </h3>
-              <table className="min-w-full bg-white">
-                <thead>
-                  <tr>
-                    <th className="py-2">Place</th>
-                    <th className="py-2">Joueur</th>
-                    <th className="py-2">Points gagnés</th>
-                    <th className="py-2">Points restants</th>
-                    <th className="py-2">Actions conseillées</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {this.game.getPlayersByScore().map((player, index) => (
-                    <tr key={player.getId()}>
-                      <td className="border px-4 py-2">{getMedal(index)}</td>
-                      <td className="border px-4 py-2">{player.getName()}</td>
-                      <td className="border px-4 py-2">{player.points}</td>
-                      <td className="border px-4 py-2">
-                        {MAX_SCORE - player.points}
-                      </td>
-                      <td className="border px-4 py-2">
-                        {DartGame.adviseMoove(player.points).length > 0
-                          ? DartGame.adviseMoove(player.points)[0]
-                          : "Aucun"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div>
+              <Button
+                className="mr-4"
+                variant="secondary"
+                onClick={() => restart()}
+              >
+                Recommencer la partie
+              </Button>
+              <Button variant="destructive" onClick={() => stop()}>
+                Arrêter la partie
+              </Button>
             </div>
           </div>
+
+          <Ranking game={game} />
         </div>
-      </>
-    );
-  }
-}
+      </div>
+    </>
+  );
+};
 
 export default Game;
