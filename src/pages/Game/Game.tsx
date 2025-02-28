@@ -88,19 +88,21 @@ class Game extends Component<GameProps, GameState> {
       multipliers: ["single", "single", "single"],
       validated: false,
       simplifiedScore: null,
-      gameEnded: false,
+      gameEnded: this.game.isGameEnded(),
     };
   }
 
   handleInputChange = (value: string, index?: number) => {
-    if (isNaN(parseInt(value))) {
-      value = "0";
+    let parsedValue = parseInt(value);
+
+    if (isNaN(parsedValue) || parsedValue < 0) {
+      parsedValue = 0;
     }
 
     if (index != null) {
       this.setState({ simplifiedScore: null });
 
-      if (parseInt(value) > 25 || parseInt(value) < 0) {
+      if (parsedValue > 25) {
         value = "0";
       }
 
@@ -114,16 +116,13 @@ class Game extends Component<GameProps, GameState> {
       this.setState({ scores: [0, 0, 0] });
       this.setState({ multipliers: ["single", "single", "single"] });
 
-      if (parseInt(value) > 180 || parseInt(value) < 0) {
-        value = "0";
+      if (parsedValue > 180) {
+        parsedValue = 0;
       }
 
-      this.setState({ simplifiedScore: parseInt(value) });
+      this.setState({ simplifiedScore: parsedValue });
 
-      this.updatePoints(
-        [parseInt(value), 0, 0],
-        ["single", "single", "single"]
-      );
+      this.updatePoints([parsedValue, 0, 0], ["single", "single", "single"]);
     }
   };
 
@@ -147,19 +146,17 @@ class Game extends Component<GameProps, GameState> {
   };
 
   handleSubmit = () => {
-    if (this.state.simplifiedScore) {
-      this.totalNewPoints = this.state.simplifiedScore;
+    const { simplifiedScore } = this.state;
+    const currentPlayer = this.game.getCurrentPlayer();
+    const newPoints = simplifiedScore || this.totalNewPoints;
+
+    if (currentPlayer.points + newPoints <= MAX_SCORE) {
+      currentPlayer.addPoints(newPoints);
     }
 
-    if (
-      this.game.getCurrentPlayer().points + this.totalNewPoints <=
-      MAX_SCORE
-    ) {
-      this.game.getCurrentPlayer().addPoints(this.totalNewPoints);
-    }
-
-    if (this.game.getCurrentPlayer().getPoints() == MAX_SCORE) {
+    if (currentPlayer.getPoints() === MAX_SCORE) {
       this.setState({ gameEnded: true });
+      this.game.save();
     } else {
       this.game.nextPlayer();
     }
@@ -170,11 +167,12 @@ class Game extends Component<GameProps, GameState> {
       validated: true,
       simplifiedScore: 0,
     });
+
     this.totalNewPoints = 0;
 
     setTimeout(() => {
       this.setState({ validated: false });
-    }, 3000);
+    }, 2000);
   };
 
   stop() {
@@ -289,6 +287,7 @@ class Game extends Component<GameProps, GameState> {
                           <Input
                             className="py-6"
                             placeholder="Entrer le score"
+                            disabled={this.state.gameEnded}
                             value={
                               this.state.scores[index] != 0
                                 ? this.state.scores[index]
@@ -305,6 +304,7 @@ class Game extends Component<GameProps, GameState> {
                         <div>
                           <Label className="mt-4">Multiplicateur</Label>
                           <Select
+                            disabled={this.state.gameEnded}
                             value={this.state.multipliers[index] as string}
                             onValueChange={(value) =>
                               this.handleSelectChange(index, value)
@@ -343,6 +343,7 @@ class Game extends Component<GameProps, GameState> {
                   </h2>
                   <Input
                     placeholder="Entrer le score"
+                    disabled={this.state.gameEnded}
                     className="py-6"
                     type="number"
                     max={180}

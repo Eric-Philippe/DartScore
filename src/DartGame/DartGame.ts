@@ -86,6 +86,12 @@ export class DartGame {
     this.save();
   }
 
+  isGameEnded(): boolean {
+    return this.players.some(
+      (player) => player.getPoints() === DartGame.MAX_SCORE
+    );
+  }
+
   /**
    * Get players array
    * @returns players array
