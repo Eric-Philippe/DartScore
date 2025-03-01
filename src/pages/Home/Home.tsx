@@ -110,7 +110,7 @@ export const Home: React.FC<HomeProps> = ({ setDartGame, error }) => {
                   </DrawerDescription>
                 </DrawerHeader>
               </div>
-              <div className="mx-auto max-w-sm flex justify-center">
+              <div className="mx-auto max-w-sm flex md:justify-center overflow-x-scroll md:overflow-x-visible">
                 {players.map((player, index) => (
                   <Card key={player.id} className="mb-4 mx-4">
                     <CardHeader>
