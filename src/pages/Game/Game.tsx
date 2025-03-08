@@ -19,6 +19,7 @@ import { Tuto } from "@/components/game/Tuto";
 
 import { multiplierToNumber } from "@/assets/DartGameRessources";
 import { DartGame } from "@/DartGame/DartGame";
+import { ValidationButton } from "@/components/ValidationButton";
 
 const NOTIF_DURATION = 2000;
 const EMPTY_ARRAY = [0, 0, 0];
@@ -212,16 +213,19 @@ export const Game: React.FC<GameProps> = ({ game }) => {
             </div>
 
             <div>
-              <Button
+              <ValidationButton
                 className="mr-4"
-                variant="secondary"
+                buttonVariant="secondary"
+                buttonText="Recommencer la partie"
+                validationText="Voulez-vous vraiment recommencer la partie ?"
                 onClick={() => restart()}
-              >
-                Recommencer la partie
-              </Button>
-              <Button variant="destructive" onClick={() => stop()}>
-                Arrêter la partie
-              </Button>
+              />
+              <ValidationButton
+                buttonVariant="destructive"
+                buttonText="Arrêter la partie"
+                validationText="Voulez-vous vraiment arrêter la partie ?"
+                onClick={() => stop()}
+              />
             </div>
           </div>
 
