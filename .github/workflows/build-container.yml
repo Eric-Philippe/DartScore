@@ -37,7 +37,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/${{ github.repository }}:${{ matrix.tag }}
+          tags: ghcr.io/eric-philippe/dartscore:1.0.0
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/${{ matrix.arch }}
